@@ -15,11 +15,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -27,16 +27,16 @@ jobs:
 
       - name: Syntax check
         run: |
-          find src -name '*.js' -print0 | xargs -0 -n1 node --check
+          find src scripts -name '*.js' -print0 | xargs -0 -n1 node --check
 
+      # --publish never is required: electron-builder detects CI and otherwise
+      # tries to publish to GitHub by itself, failing on a token it was never
+      # given. Releases are this workflow's job, in the step below.
       - name: Package
-        run: npx electron-builder --linux AppImage deb rpm
-        env:
-          # electron-builder only publishes when explicitly told to.
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npx electron-builder --linux AppImage deb rpm --publish never
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-packages
           path: |
@@ -52,14 +52,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: linux-packages
           path: dist
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
-          draft: true
+          draft: false
           generate_release_notes: true
