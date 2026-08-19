@@ -1,0 +1,110 @@
+{
+  "name": "whatsappforlinux",
+  "productName": "WhatsAppForLinux",
+  "version": "1.0.0",
+  "description": "An unofficial, multi-account WhatsApp desktop client for Linux",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --linux",
+    "dist:deb": "electron-builder --linux deb",
+    "dist:appimage": "electron-builder --linux AppImage",
+    "dist:rpm": "electron-builder --linux rpm",
+    "dist:snap": "electron-builder --linux snap",
+    "icons": "python3 build/make-icons.py",
+    "dev:desktop": "node scripts/dev-desktop.js install",
+    "dev:desktop:remove": "node scripts/dev-desktop.js uninstall"
+  },
+  "keywords": [
+    "whatsapp",
+    "linux",
+    "electron",
+    "desktop",
+    "multi-account"
+  ],
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "homepage": "https://github.com/abuhassan-dev/WhatsAppForLinux",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abuhassan-dev/WhatsAppForLinux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/abuhassan-dev/WhatsAppForLinux/issues"
+  },
+  "author": {
+    "name": "Mohammad Abuhassan",
+    "email": "info@mayon.dev"
+  },
+  "build": {
+    "appId": "com.mayon.whatsappforlinux",
+    "productName": "WhatsAppForLinux",
+    "copyright": "Copyright \u00a9 2026 Mohammad Abuhassan",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.md",
+      "!**/{.git,.github,.editorconfig}"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm",
+        "snap"
+      ],
+      "icon": "build/icons",
+      "category": "Network;InstantMessaging;Chat;",
+      "synopsis": "Multi-account WhatsApp desktop client for Linux",
+      "description": "Multi-account WhatsApp client. Each account keeps its own isolated session, so several numbers stay signed in side by side.",
+      "executableName": "whatsappforlinux",
+      "desktop": {
+        "entry": {
+          "Name": "WhatsAppForLinux",
+          "GenericName": "Messenger",
+          "Keywords": "whatsapp;chat;messaging;im;messenger;",
+          "StartupNotify": "true"
+        }
+      },
+      "syncDesktopName": true
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "${name}_${version}_${arch}.${ext}"
+    },
+    "rpm": {
+      "artifactName": "${name}-${version}.${arch}.${ext}"
+    },
+    "snap": {
+      "confinement": "strict",
+      "grade": "stable",
+      "summary": "Multi-account WhatsApp client for Linux",
+      "plugs": [
+        "default",
+        "audio-playback",
+        "audio-record",
+        "camera",
+        "removable-media",
+        "screen-inhibit-control"
+      ]
+    }
+  },
+  "desktopName": "com.mayon.whatsappforlinux.desktop"
+}

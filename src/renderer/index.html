@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; form-action 'none'; base-uri 'none';"
+    />
+    <title>Accounts</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="rail" aria-label="Accounts">
+      <ul class="tiles" id="tiles"></ul>
+
+      <div class="rail-actions">
+        <button class="rail-btn" id="add" type="button" title="Add account (Ctrl+Shift+N)" aria-label="Add account">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+        <button class="rail-btn" id="open-settings" type="button" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <div class="overlay" id="overlay" hidden>
+      <!-- Rename sheet -->
+      <section class="sheet" id="sheet-rename" hidden aria-labelledby="rename-title">
+        <h2 id="rename-title">Rename account</h2>
+        <p class="hint">Only a local label. It changes nothing on WhatsApp.</p>
+        <input id="rename-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" />
+        <div class="sheet-actions">
+          <button class="btn ghost" type="button" data-close>Cancel</button>
+          <button class="btn primary" id="rename-save" type="button">Save</button>
+        </div>
+      </section>
+
+      <!-- Settings sheet -->
+      <section class="sheet" id="sheet-settings" hidden aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+
+        <label class="row">
+          <input type="checkbox" id="set-closeToTray" />
+          <span>
+            <strong>Close to tray</strong>
+            <em>Closing the window keeps accounts online in the background.</em>
+          </span>
+        </label>
+
+        <label class="row">
+          <input type="checkbox" id="set-startMinimized" />
+          <span>
+            <strong>Start minimised</strong>
+            <em>Launch straight to the tray instead of opening the window.</em>
+          </span>
+        </label>
+
+        <label class="row">
+          <input type="checkbox" id="set-useWaylandOzone" />
+          <span>
+            <strong>Native Wayland</strong>
+            <em>Sharper on HiDPI. Needs a restart, and X11 sessions ignore it.</em>
+          </span>
+        </label>
+
+        <div class="about">
+          Independent project — not affiliated with or endorsed by WhatsApp LLC.
+        </div>
+
+        <p class="credit">
+          Programmed by <strong>Mohammad Abuhassan</strong>
+          <a class="link" id="site-link" href="https://mayon.dev">mayon.dev</a>
+        </p>
+
+        <div class="sheet-actions">
+          <button class="btn primary" type="button" data-close>Done</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="sidebar.js"></script>
+  </body>
+</html>
