@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, ipcMain, dialog, session, Menu, shell } = require('electron');
+const { app, ipcMain, dialog, session, Menu, shell, nativeImage } = require('electron');
 
 const { Store } = require('./store');
 const { AccountStore } = require('./accounts');
@@ -8,7 +8,7 @@ const { AppWindow } = require('./window');
 const { AppTray } = require('./tray');
 const { buildMenu } = require('./menu');
 const avatars = require('./avatars');
-const { APP_ID } = require('./config');
+const { APP_ID, isAllowedHost } = require('./config');
 
 const isDev = process.argv.includes('--dev') || !app.isPackaged;
 const startHidden = process.argv.includes('--hidden');
@@ -51,19 +51,30 @@ if (settings.get('useWaylandOzone') && process.env.WAYLAND_DISPLAY) {
 const accounts = new AccountStore();
 let appWindow = null;
 let tray = null;
+// Last avatar URL fetched per account, so a repeated report costs nothing.
+const lastAvatarSrc = new Map();
 
 app.on('second-instance', () => appWindow?.show());
 
 app.whenReady().then(() => {
-  appWindow = new AppWindow({ accounts, settings, isDev });
-  if (startHidden || settings.get('startMinimized')) {
-    settings.data.startMinimized = true; // honoured by create(), not persisted
-  }
+  // startHidden is passed as its own flag rather than written into settings:
+  // mutating settings.data here would get persisted by the next save (window
+  // state is saved on every close), turning a one-off --hidden launch into a
+  // permanent start-minimised preference.
+  appWindow = new AppWindow({
+    accounts,
+    settings,
+    isDev,
+    startHidden: startHidden || !!settings.get('startMinimized')
+  });
   appWindow.create();
 
   tray = new AppTray({ appWindow, accounts });
   tray.create();
   appWindow.onUnreadChange = () => tray?.refresh();
+  // Keeps menu and tray radio marks honest when the active account changes by
+  // any route — sidebar click, Ctrl+Tab, notification click.
+  appWindow.onActiveChange = () => refreshMenus();
 
   refreshMenus();
   registerIpc();
@@ -126,6 +137,7 @@ async function removeAccount(accountId) {
   appWindow.removeView(accountId);
   accounts.remove(accountId);
   avatars.remove(accountId);
+  lastAvatarSrc.delete(accountId);
 
   try {
     const ses = session.fromPartition(partition);
@@ -186,7 +198,6 @@ function registerIpc() {
   ipcMain.on('accounts:activate', (event, id) => {
     if (!fromSidebar(event)) return;
     appWindow.setActive(id);
-    refreshMenus();
   });
 
   ipcMain.on('accounts:reload', (event, id) => {
@@ -257,6 +268,41 @@ function registerIpc() {
     return true;
   });
 
+  // The preload found the user's photo but cannot read its pixels: the CDN
+  // serves it without CORS headers, so a canvas in the page would be tainted.
+  // Fetched here instead — the main process is not subject to CORS — through
+  // the account's own session, then normalised to a 96px PNG.
+  ipcMain.on('account:avatar-src', async (event, url) => {
+    const id = accountIdFor(event);
+    if (!id) return;
+
+    let parsed;
+    try {
+      parsed = new URL(String(url));
+    } catch {
+      return;
+    }
+    if (parsed.protocol !== 'https:' || !isAllowedHost(parsed.href)) return;
+    if (lastAvatarSrc.get(id) === parsed.href) return;
+
+    try {
+      const response = await event.sender.session.fetch(parsed.href);
+      if (!response.ok) return;
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length === 0 || buffer.length > 5 * 1024 * 1024) return;
+
+      const image = nativeImage.createFromBuffer(buffer);
+      if (image.isEmpty()) return;
+      const png = image.resize({ width: 96, height: 96 }).toPNG();
+
+      lastAvatarSrc.set(id, parsed.href);
+      appWindow.setAvatar(id, `data:image/png;base64,${png.toString('base64')}`);
+      if (isDev) console.log(`[avatar] ${accounts.get(id)?.name}: fetched OK`);
+    } catch (err) {
+      console.error('[main] avatar fetch failed:', err.message);
+    }
+  });
+
   // Sent by the account preload once it can find the signed-in user's photo.
   ipcMain.on('account:avatar', (event, dataUrl, diagnostic) => {
     const id = accountIdFor(event);
@@ -273,6 +319,5 @@ function registerIpc() {
     if (!id) return;
     appWindow.show();
     appWindow.setActive(id);
-    refreshMenus();
   });
 }

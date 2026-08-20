@@ -22,6 +22,8 @@ const AVATAR_PX = 96;          // rendered at 46px, so this stays crisp on HiDPI
 const FIRST_TRY_MS = 3000;     // while waiting for login / first paint
 const REFRESH_MS = 5 * 60_000; // in case the user changes their photo
 
+// For https sources this holds the last URL handed to the main process; for
+// blob: sources, the last PNG data URL. Either way it stops repeat sends.
 let lastSent = null;
 
 // Meta's CDN encodes the media type in the path. t61.24694-24 is the profile
@@ -108,9 +110,21 @@ function publishAvatar() {
     return false;
   }
 
+  const src = img.currentSrc || img.src || '';
+
+  // CDN images arrive without CORS headers, so drawing them on a canvas
+  // taints it and toDataURL throws. The main process has no CORS: hand it
+  // the URL and let it fetch through this account's session.
+  if (src.startsWith('https:')) {
+    if (src === lastSent) return true;
+    lastSent = src;
+    ipcRenderer.send('account:avatar-src', src);
+    return true;
+  }
+
+  // blob: URLs are same-origin — the canvas stays clean, so read it here.
   const dataUrl = toPngDataUrl(img);
   if (!dataUrl || dataUrl === lastSent) return !!dataUrl;
-
   lastSent = dataUrl;
   ipcRenderer.send('account:avatar', dataUrl, { found: true });
   return true;

@@ -24,6 +24,9 @@ function initials(name) {
 }
 
 function render() {
+  // A state push can land mid-drag; the dragged node is about to be replaced,
+  // so its dragend will never fire. Reset by hand.
+  if (dragSourceId) endDrag();
   tilesEl.replaceChildren();
 
   for (const account of state.accounts) {

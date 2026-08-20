@@ -44,10 +44,11 @@ class AppWindow {
    * @param {import('./store').Store} deps.settings
    * @param {boolean} deps.isDev
    */
-  constructor({ accounts, settings, isDev }) {
+  constructor({ accounts, settings, isDev, startHidden = false }) {
     this.accounts = accounts;
     this.settings = settings;
     this.isDev = isDev;
+    this.startHidden = startHidden;
 
     /** @type {Map<string, WebContentsView>} */
     this.views = new Map();
@@ -60,6 +61,7 @@ class AppWindow {
     this.sidebar = null;
     this.overlayOpen = false;
     this.onUnreadChange = null;
+    this.onActiveChange = null;
   }
 
   /* ------------------------------------------------------------------ */
@@ -90,14 +92,23 @@ class AppWindow {
     this.window.on('unmaximize', () => this._layout());
     this.window.on('close', (event) => this._onClose(event));
     this.window.on('closed', () => {
-      this.window = null;
+      // The views' webContents are not destroyed with the window; left alone
+      // they would keep running (unthrottled, by design) with no window at all.
+      for (const view of this.views.values()) {
+        if (!view.webContents.isDestroyed()) view.webContents.close();
+      }
+      if (this.sidebar && !this.sidebar.webContents.isDestroyed()) {
+        this.sidebar.webContents.close();
+      }
       this.views.clear();
+      this.unread.clear();
+      this.window = null;
       this.sidebar = null;
     });
 
     // BaseWindow emits no ready-to-show, so the sidebar painting is the cue.
     this.sidebar.webContents.once('did-finish-load', () => {
-      if (!this.settings.get('startMinimized')) this.window.show();
+      if (!this.startHidden) this.window?.show();
       this.pushAccounts();
     });
 
@@ -263,6 +274,7 @@ class AppWindow {
     }
     this._layout();
     this.pushAccounts();
+    this.onActiveChange?.();
   }
 
   cycleAccount(step) {
@@ -365,7 +377,10 @@ class AppWindow {
 
   show() {
     // The window may have been destroyed while the tray kept the app alive.
-    if (!this.window) this.create();
+    if (!this.window) {
+      this.startHidden = false;
+      this.create();
+    }
     if (this.window.isMinimized()) this.window.restore();
     this.window.show();
     this.window.focus();
