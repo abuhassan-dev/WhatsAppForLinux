@@ -1,7 +1,7 @@
 {
   "name": "whatsappforlinux",
   "productName": "WhatsAppForLinux",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An unofficial, multi-account WhatsApp desktop client for Linux",
   "main": "src/main/main.js",
   "license": "MIT",
