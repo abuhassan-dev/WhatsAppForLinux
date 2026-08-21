@@ -56,6 +56,25 @@ const lastAvatarSrc = new Map();
 
 app.on('second-instance', () => appWindow?.show());
 
+// A session logout tears the whole cgroup down at once: the zygote and GPU
+// helper processes die before the main process does, Chromium's attempts to
+// respawn the GPU process then fail, and it aborts with a deliberate SIGTRAP
+// ("GPU process isn't usable. Goodbye.") — which Ubuntu's apport reports as an
+// app crash on next login. Treat termination signals as an orderly shutdown
+// instead: persist state and leave before Chromium enters that race.
+for (const signal of ['SIGTERM', 'SIGHUP']) {
+  process.on(signal, () => {
+    app.isQuitting = true;
+    try {
+      appWindow?.saveWindowState();
+      tray?.destroy();
+    } catch {
+      /* exiting anyway */
+    }
+    app.exit(0);
+  });
+}
+
 app.whenReady().then(() => {
   // startHidden is passed as its own flag rather than written into settings:
   // mutating settings.data here would get persisted by the next save (window
